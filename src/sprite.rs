@@ -1,27 +1,29 @@
 use std::collections::HashMap;
+use std::hash::{Hash};
 
 use glium::{Display};
-use glium::texture::{SrgbTexture1d};
+use glium::texture::{SrgbTexture2d};
 
 pub struct Float2 {
     pub x: f32,
     pub y: f32,
 }
 
-pub struct Quad {
-    pos: [f32; 2],
-    size: f32,
+pub struct Transform {
+    pub mat: [[f32; 4]; 4]
 }
+
+#[derive(Copy, Clone, Hash)]
+pub struct TextureHandle(u128);
 
 pub struct TextureManager {
     next_guid: u128,
-    textures: HashMap<u128, SrgbTexture1d>,
+    textures: HashMap<TextureHandle, SrgbTexture2d>,
 }
 
 pub struct Sprite {
-    pub pos: Float2,
-    pub size: f32,
-    pub tex_id: u128,
+    pub transform: Transform,
+    pub texture: TextureHandle,
 }
 
 impl Float2 {
@@ -36,34 +38,62 @@ impl Into<Float2> for (f32, f32) {
     }
 }
 
-impl Quad {
-    pub fn new(x: f32, y: f32, size: f32) -> Self {
-        Quad { pos: [x, y], size: size }
+impl Transform {
+    pub fn new(mat: Option<[[f32; 4]; 4]>) -> Self {
+        if let Some(matrix) = mat {
+            return Transform {
+                mat: matrix
+            };
+        } else {
+            return Transform {
+                mat: [
+                    [ 1.0, 0.0, 0.0, 0.0 ],
+                    [ 0.0, 1.0, 0.0, 0.0 ],
+                    [ 0.0, 0.0, 1.0, 0.0 ],
+                    [ 0.0, 0.0, 0.0, 1.0 ]
+                ]
+            };
+        }
     }
 }
+
+impl From<(Float2, f32)> for Transform {
+    fn from((position, rotation): (Float2, f32)) -> Self {
+        Transform::new(Some(
+            [
+                [  rotation.cos(), rotation.sin(), 0.0, 0.0 ],
+                [ -rotation.sin(), rotation.cos(), 0.0, 0.0 ],
+                [             0.0,            0.0, 1.0, 0.0 ],
+                [      position.x,     position.y, 0.0, 1.0 ]
+            ]
+        ))
+    }
+}
+
+impl PartialEq for TextureHandle {
+    fn eq(&self, other: &TextureHandle) -> bool {
+        other.0 == self.0
+    }
+}
+
+impl Eq for TextureHandle { }
 
 impl TextureManager {
     pub fn new() -> Self {
         TextureManager { next_guid: 0, textures: HashMap::new() }
     }
 
-    pub fn load_texture(&mut self, facade: &Display, pixels: Vec<(f32, f32, f32)>) -> u128 {
+    pub fn load_texture(&mut self, facade: &Display, pixels: Vec<Vec<(f32, f32, f32)>>) -> TextureHandle {
         self.next_guid += 1;
 
-        let texture = SrgbTexture1d::new(facade, pixels).expect("Failed to load texture");
-        self.textures.insert(self.next_guid.clone(), texture);
-        self.next_guid.clone()
+        let texture = SrgbTexture2d::new(facade, pixels).expect("Failed to load texture");
+        self.textures.insert(TextureHandle(self.next_guid.clone()), texture);
+        TextureHandle(self.next_guid.clone())
     }
 }
 
 impl Sprite {
-    pub fn new(pos: Float2, size: f32) -> Self {
-        Sprite { pos: pos, size: size, tex_id: 0 }
-    }
-}
-
-impl Into<Quad> for Sprite {
-    fn into(self) -> Quad {
-        Quad::new(self.pos.x, self.pos.y, self.size)
+    pub fn new(transform: Transform, texture: TextureHandle) -> Self {
+        Sprite { transform: transform, texture: texture }
     }
 }

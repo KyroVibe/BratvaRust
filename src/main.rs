@@ -2,6 +2,7 @@
 extern crate glium;
 
 mod sprite;
+mod game;
 
 use glium::glutin::dpi::{LogicalSize};
 use glium::{glutin, Surface};
