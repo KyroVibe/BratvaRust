@@ -39,38 +39,44 @@ fn main() {
     let index_buffer = glium::IndexBuffer::new(&display, PrimitiveType::TrianglesList,
                                                &[0u16, 1, 2, 2, 3, 0]).unwrap();
 
+    let frag = std::fs::read_to_string("shaders/fragment.glsl").unwrap();
+    let vert = std::fs::read_to_string("shaders/vertex.glsl").unwrap();
+
     // compiling shaders and linking them together
     let program = program!(&display,
         330 => {
-            vertex: "
-                #version 330
-                uniform mat4 mat;
-                in vec2 position;
-                in vec3 color;
-                out vec3 vColor;
-                void main() {
-                    gl_Position = vec4(position, 0.0, 1.0) * mat;
-                    vColor = color;
-                }
-            ",
+            // vertex: "
+            //     #version 330
+            //     uniform mat4 mat;
+            //     in vec2 position;
+            //     in vec3 color;
+            //     out vec3 vColor;
+            //     void main() {
+            //         gl_Position = vec4(position, 0.0, 1.0) * mat;
+            //         vColor = color;
+            //     }
+            // ",
 
-            geometry: "
+            vertex: vert.as_str(),
+
+            /*geometry: "
                 #version 330
                 layout(points) in;
                 layout(triangle_strip, max_vertices=6) out;
 
                 in vec2 pos[];
                 in float size[];
-            ",
+            ",*/
 
-            fragment: "
-                #version 330
-                in vec3 vColor;
-                out vec4 f_color;
-                void main() {
-                    f_color = vec4(vColor, 1.0);
-                }
-            "
+            // fragment: "
+            //     #version 330
+            //     in vec3 vColor;
+            //     out vec4 f_color;
+            //     void main() {
+            //         f_color = vec4(vColor, 1.0);
+            //     }
+            // "
+            fragment: frag.as_str()
         },
     ).unwrap();
 
