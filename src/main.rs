@@ -1,8 +1,7 @@
 #[macro_use]
 extern crate glium;
 
-mod sprite;
-mod game;
+mod cube;
 
 use glium::glutin::dpi::{LogicalSize};
 use glium::{glutin, Surface};
@@ -27,6 +26,8 @@ fn main() {
         .with_inner_size(LogicalSize::new(800.0, 600.0));
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
+
+    let cube = cube::Cube::new([1.0, 1.0, 1.0]);
 
     // building the vertex buffer, which contains all the vertices that we will draw
     let vertex_buffer = {
