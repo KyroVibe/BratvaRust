@@ -2,6 +2,7 @@
 extern crate glium;
 
 mod cube;
+mod ecs;
 
 use glium::glutin::dpi::{LogicalSize};
 use glium::{glutin, Surface};
