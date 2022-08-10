@@ -2,10 +2,13 @@
 extern crate glium;
 
 mod cube;
+mod transform;
 
 use glium::glutin::dpi::{LogicalSize};
 use glium::{glutin, Surface};
 use glium::index::PrimitiveType;
+
+use transform::Transform;
 
 fn gen_projection_mat() -> [[f32; 4]; 4] {
     let fov = 3.141592f32 * (1.0 / 2.0);
@@ -20,100 +23,132 @@ fn gen_projection_mat() -> [[f32; 4]; 4] {
     ]
 }
 
+fn gen_ortho_projection_mat(aspect_ration: f32, y_units: i32, camera_y: f32) -> [[f32; 4]; 4] {
+    [
+        [ 1.0 / y_units as f32,                              0.0, 0.0,       0.0 ],
+        [                  0.0, aspect_ration / (y_units as f32), 0.0, -camera_y / y_units as f32 ],
+        [                  0.0,                              0.0, 1.0,       0.0 ],
+        [                  0.0,                              0.0, 0.0,       1.0 ]
+    ]
+}
+
 fn main() {
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new()
-        .with_inner_size(LogicalSize::new(800.0, 600.0));
+        .with_inner_size(LogicalSize::new(800.0f32, 600.0f32));
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
-    let cube = cube::Cube::new([1.0, 1.0, 1.0]);
+    // let t = Transform::translation(0.0, 0.0);
+    let r = Transform::rotation(3.14159 * 0.25f32);
+    let m = r;//Transform::multi(&t, &r);
 
     // building the vertex buffer, which contains all the vertices that we will draw
+    // let vertex_buffer = {
+    //     #[derive(Copy, Clone)]
+    //     struct Vertex {
+    //         position: [f32; 3],
+    //         color: [f32; 3],
+    //         normal: [f32; 3],
+    //     }
+
+    //     implement_vertex!(Vertex, position, color, normal);
+
+    //     glium::VertexBuffer::new(&display,
+    //         &[
+    //             // BACK
+    //             Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0, -1.0] },
+    //             Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0, -1.0] },
+    //             Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0] },
+
+    //             Vertex { position: [ 0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0, -1.0] },
+    //             Vertex { position: [ 0.5, -0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0, -1.0] },
+    //             Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0] },
+
+    //             // LEFT
+    //             Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [-1.0, 0.0, 0.0] },
+    //             Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [-1.0, 0.0, 0.0] },
+    //             Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0] },
+
+    //             Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [-1.0, 0.0, 0.0] },
+    //             Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [-1.0, 0.0, 0.0] },
+    //             Vertex { position: [-0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0] },
+
+    //             // FRONT
+    //             Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0, 1.0] },
+    //             Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0, 1.0] },
+    //             Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, 1.0] },
+
+    //             Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0, 1.0] },
+    //             Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0, 1.0] },
+    //             Vertex { position: [-0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, 1.0] },
+
+    //             // RIGHT
+    //             Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [1.0, 0.0, 0.0] },
+    //             Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [1.0, 0.0, 0.0] },
+    //             Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [1.0, 0.0, 0.0] },
+
+    //             Vertex { position: [ 0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [1.0, 0.0, 0.0] },
+    //             Vertex { position: [ 0.5, -0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [1.0, 0.0, 0.0] },
+    //             Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [1.0, 0.0, 0.0] },
+
+    //             // TOP
+    //             Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 1.0, 0.0] },
+    //             Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 1.0, 0.0] },
+    //             Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0] },
+
+    //             Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 1.0, 0.0] },
+    //             Vertex { position: [ 0.5,  0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 1.0, 0.0] },
+    //             Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0] },
+
+    //             // BOTTOM
+    //             Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, -1.0, 0.0] },
+    //             Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, -1.0, 0.0] },
+    //             Vertex { position: [-0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0] },
+
+    //             Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, -1.0, 0.0] },
+    //             Vertex { position: [ 0.5, -0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [0.0, -1.0, 0.0] },
+    //             Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0] },
+    //         ]
+    //     ).unwrap()
+    // };
+
     let vertex_buffer = {
         #[derive(Copy, Clone)]
         struct Vertex {
-            position: [f32; 3],
-            color: [f32; 3],
-            normal: [f32; 3],
+            position: [f32; 2],
         }
 
-        implement_vertex!(Vertex, position, color, normal);
+        implement_vertex!(Vertex, position);
 
         glium::VertexBuffer::new(&display,
             &[
-                // BACK
-                Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0, -1.0] },
-                Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0, -1.0] },
-                Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0] },
-
-                Vertex { position: [ 0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0, -1.0] },
-                Vertex { position: [ 0.5, -0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0, -1.0] },
-                Vertex { position: [-0.5, -0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, -1.0] },
-
-                // LEFT
-                Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [-1.0, 0.0, 0.0] },
-                Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [-1.0, 0.0, 0.0] },
-                Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0] },
-
-                Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [-1.0, 0.0, 0.0] },
-                Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [-1.0, 0.0, 0.0] },
-                Vertex { position: [-0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [-1.0, 0.0, 0.0] },
-
-                // FRONT
-                Vertex { position: [-0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0, 1.0] },
-                Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0, 1.0] },
-                Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, 1.0] },
-
-                Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 0.0, 1.0] },
-                Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 0.0, 1.0] },
-                Vertex { position: [-0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 0.0, 1.0] },
-
-                // RIGHT
-                Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [1.0, 0.0, 0.0] },
-                Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [1.0, 0.0, 0.0] },
-                Vertex { position: [ 0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [1.0, 0.0, 0.0] },
-
-                Vertex { position: [ 0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [1.0, 0.0, 0.0] },
-                Vertex { position: [ 0.5, -0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [1.0, 0.0, 0.0] },
-                Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [1.0, 0.0, 0.0] },
-
-                // TOP
-                Vertex { position: [-0.5,  0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 1.0, 0.0] },
-                Vertex { position: [-0.5,  0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 1.0, 0.0] },
-                Vertex { position: [ 0.5,  0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0] },
-
-                Vertex { position: [ 0.5,  0.5,  0.5], color: [0.0, 1.0, 0.0], normal: [0.0, 1.0, 0.0] },
-                Vertex { position: [ 0.5,  0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [0.0, 1.0, 0.0] },
-                Vertex { position: [-0.5,  0.5, -0.5], color: [1.0, 0.0, 0.0], normal: [0.0, 1.0, 0.0] },
-
-                // BOTTOM
-                Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, -1.0, 0.0] },
-                Vertex { position: [ 0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0], normal: [0.0, -1.0, 0.0] },
-                Vertex { position: [-0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0] },
-
-                Vertex { position: [-0.5, -0.5, -0.5], color: [0.0, 1.0, 0.0], normal: [0.0, -1.0, 0.0] },
-                Vertex { position: [ 0.5, -0.5, -0.5], color: [0.0, 0.0, 1.0], normal: [0.0, -1.0, 0.0] },
-                Vertex { position: [ 0.5, -0.5,  0.5], color: [1.0, 0.0, 0.0], normal: [0.0, -1.0, 0.0] },
+                Vertex { position: [-0.5, -0.5] },
+                Vertex { position: [-0.5,  0.5] },
+                Vertex { position: [ 0.5,  0.5] },
+                
+                Vertex { position: [ 0.5,  0.5] },
+                Vertex { position: [ 0.5, -0.5] },
+                Vertex { position: [-0.5, -0.5] },
             ]
         ).unwrap()
     };
 
     let mut a = Vec::<u16>::new();
-    // for x in 0..12u16 {
-    //     a.push(x * 3);
-    //     a.push((x * 3) + 1);
-    //     a.push((x * 3) + 1);
-    //     a.push((x * 3) + 2);
-    //     a.push((x * 3) + 2);
-    //     a.push(x * 3);
+    // for x in 0..6u16 {
+    //     a.push(x);
     // }
-    for x in 0..36u16 {
-        a.push(x);
+    for x in 0..2u16 {
+        a.push(x * 3);
+        a.push((x * 3) + 1);
+        a.push((x * 3) + 1);
+        a.push((x * 3) + 2);
+        a.push((x * 3) + 2);
+        a.push(x * 3);
     }
 
     // building the index buffer
-    let index_buffer = glium::IndexBuffer::new(&display, PrimitiveType::TrianglesList,
+    let index_buffer = glium::IndexBuffer::new(&display, PrimitiveType::LinesList,
         // &[0u16, 1, 2, 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35]
         a.as_slice()
     ).unwrap();
@@ -168,28 +203,24 @@ fn main() {
     // let mut theta = 0.0f32;
     let mut draw = move || {
         // building the uniforms
-        theta += 0.0004;
+        // theta += 0.0004;
+
+        let transmat: [[f32; 4]; 4] = [
+            [ m.mat[0][0], m.mat[0][1], m.mat[0][2], m.mat[0][3] ],
+            [ m.mat[1][0], m.mat[1][1], m.mat[1][2], m.mat[1][3] ],
+            [ m.mat[2][0], m.mat[2][1], m.mat[2][2], m.mat[2][3] ],
+            [ m.mat[3][0], m.mat[3][1], m.mat[3][2], m.mat[3][3] ],
+        ];
+
         let uniforms = uniform! {
-            mat: [
-                [ theta.cos(), 0.0, theta.sin(), 0.0],
-                [         0.0, 1.0,         0.0, 0.0],
-                [-theta.sin(), 0.0, theta.cos(), 1.0],
-                [         0.0, 0.0,         0.0, 1.0f32]
-            ],
-            // projection_mat: [
-            //     [ 1.0, 0.0, 0.0, 0.0 ],
-            //     [ 0.0, 1.0, 0.0, 0.2 ],
-            //     [ 0.0, 0.0, 0.2, 0.5 ],
-            //     [ 0.0, 0.0, 0.0, 1.0f32 ]
+            // transform_mat: [
+            //     [ theta.cos(), theta.sin(), 0.0, 0.0 ],
+            //     [-theta.sin(), theta.cos(), 0.0, 0.0 ],
+            //     [          0.0,        0.0, 1.0, 0.0 ],
+            //     [          0.0,        0.0, 0.0, 1.0 ]
             // ],
-            projection_mat: gen_projection_mat(),
-            // mat: [
-            //     [1.0, 0.0, 0.0, 0.0],
-            //     [0.0, 1.0, 0.0, 0.0],
-            //     [0.0, 0.0, 1.0, 0.0],
-            //     [0.0, 0.0, 0.0, 1.0f32]
-            // ],
-            aspect_ratio: 800.0f32 / 600.0f32
+            transform_mat: transmat,
+            camera_mat: gen_ortho_projection_mat(800.0 / 600.0, 5, 0f32),
         };
 
         // drawing a frame

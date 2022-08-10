@@ -9,10 +9,6 @@ pub struct Float2 {
     pub y: f32,
 }
 
-pub struct Transform {
-    pub mat: [[f32; 4]; 4]
-}
-
 #[derive(Copy, Clone, Hash)]
 pub struct TextureHandle(u128);
 
