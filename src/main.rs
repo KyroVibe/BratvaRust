@@ -167,9 +167,9 @@ fn main() {
     // applications should probably use a function that takes the resources as an argument.
     let mut theta = 3.14159f32 * (1.0 / 6.0); // 30 degrees
     // let mut theta = 0.0f32;
-    let mut draw = move || {
+    let mut draw = move |delta_t: f32| {
         // building the uniforms
-        theta += 0.0004;
+        theta += 3.14159 * 0.5 * delta_t; // 90 degrees a second
         let uniforms = uniform! {
             mat: [
                 [ theta.cos(), 0.0, theta.sin(), 0.0],
@@ -210,12 +210,18 @@ fn main() {
     };
 
     // Draw the triangle to the screen.
-    draw();
+    draw(0.0);
 
+    let mut now = std::time::SystemTime::now();
+    let fps = 144.0;
     // the main loop
     event_loop.run(move |event, _, control_flow| {
 
-        draw();
+        let elapsed = now.elapsed().unwrap().as_secs_f32();
+        if elapsed > 1.0 / fps {
+            now = std::time::SystemTime::now();
+            draw(elapsed);
+        }
 
         *control_flow = match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
