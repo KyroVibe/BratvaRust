@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate glium;
 
+mod util;
 mod cube;
 mod ecs;
 
@@ -24,12 +25,16 @@ fn gen_projection_mat() -> [[f32; 4]; 4] {
 fn main() {
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new()
-        .with_inner_size(LogicalSize::new(800.0, 600.0));
+        .with_inner_size(LogicalSize::new(800.0, 600.0))
+        .with_title("Bratva");
     let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
     let cube = cube::Cube::new([1.0, 1.0, 1.0]);
 
+    let (vertex_buffer, index_buffer) = cube::Cube::create_cube_buffers(&display).unwrap();
+
+    /*
     // building the vertex buffer, which contains all the vertices that we will draw
     let vertex_buffer = {
         #[derive(Copy, Clone)]
@@ -118,6 +123,7 @@ fn main() {
         // &[0u16, 1, 2, 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35]
         a.as_slice()
     ).unwrap();
+    */
 
     let frag = std::fs::read_to_string("shaders/fragment.glsl").unwrap();
     let vert = std::fs::read_to_string("shaders/vertex.glsl").unwrap();

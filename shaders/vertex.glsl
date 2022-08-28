@@ -33,7 +33,8 @@ void main() {
     //     vColor = vec3(1.0, 1.0, 1.0);
     // }
 
-    vColor = vec3(1.0, 0.0, 1.0);
+    // vColor = vec3(1.0, 0.0, 1.0);
+    vColor = color;
     vNormal = (vec4(normal, 1.0) * rot).xyz;
 
     // vColor = color;
